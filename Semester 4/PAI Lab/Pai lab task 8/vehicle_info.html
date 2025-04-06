@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vehicle Info App</title>
+</head>
+<body>
+    <h1>Vehicle Info App</h1>
+
+    <h2>Get Models by Make</h2>
+    <form id="makeForm">
+        <label for="make">Enter Make:</label>
+        <input type="text" id="make" name="make">
+        <button type="submit">Get Models</button>
+    </form>
+    <div id="modelsResult"></div>
+
+    <h2>Get Vehicle Info by VIN</h2>
+    <form id="vinForm">
+        <label for="vin">Enter VIN:</label>
+        <input type="text" id="vin" name="vin">
+        <button type="submit">Get Info</button>
+    </form>
+    <div id="vinResult"></div>
+
+    <script>
+        document.getElementById('makeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const make = document.getElementById('make').value;
+
+            const response = await fetch('/get-models', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ make })
+            });
+            const html = await response.text();
+            document.getElementById('modelsResult').innerHTML = html;
+        });
+
+        document.getElementById('vinForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const vin = document.getElementById('vin').value;
+
+            const response = await fetch('/get-vehicle-info', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vin })
+            });
+            const html = await response.text();
+            document.getElementById('vinResult').innerHTML = html;
+        });
+    </script>
+</body>
+</html>
