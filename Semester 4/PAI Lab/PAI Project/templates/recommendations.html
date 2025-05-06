@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Recommendations</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-indigo-900 text-white h-screen fixed transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+        <div class="p-6">
+            <h2 class="text-2xl font-bold mb-8">User Panel</h2>
+            <nav>
+                <ul class="space-y-4">
+                    <li>
+                        <a href="/user" class="flex items-center p-3 rounded-lg hover:bg-indigo-700 transition">
+                            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/upload" class="flex items-center p-3 rounded-lg hover:bg-indigo-700 transition">
+                            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V10m0 0l-4 4m4-4l4 4m-4 4h10m-10-8h10m-6 4a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2z"></path></svg>
+                            Upload Resume
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/recommendations" class="flex items-center p-3 rounded-lg bg-indigo-700">
+                            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            Recommendations
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/logout" onclick="return confirm('Are you sure you want to logout?')" class="flex items-center p-3 rounded-lg hover:bg-red-700 transition">
+                            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            Logout
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Sidebar Toggle Button for Mobile -->
+    <button id="sidebarToggle" class="md:hidden fixed top-4 left-4 z-50 p-2 bg-indigo-600 text-white rounded-lg">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+    </button>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="flex-1 p-8 transition-all duration-300 md:ml-64">
+        <h2 class="text-3xl font-bold text-gray-800 mb-8 text-center">Job Recommendations</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6">
+                    {% for category, msg in messages %}
+                        <div class="p-4 rounded-lg {{ 'bg-green-100 text-green-600' if category == 'success' else 'bg-red-100 text-red-600' }}">
+                            {{ msg }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <form method="POST" class="flex flex-col space-y-4">
+                <label for="category" class="text-gray-700 font-medium">Select a Job Category:</label>
+                <select name="category" id="category" onchange="this.form.submit()" class="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                    <option value="">-- Choose a Category --</option>
+                    {% for category in job_categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        {% if recommended_skills %}
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Recommended Skills to Add to Your Resume:</h3>
+                <ul class="list-disc pl-5 space-y-2">
+                    {% for skill in recommended_skills %}
+                        <li class="text-gray-700">{{ skill }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <a href="/user" class="mt-8 inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition">Back to Dashboard</a>
+    </main>
+
+    <script>
+        // Sidebar Toggle for Mobile
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mainContent = document.getElementById('mainContent');
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+            mainContent.classList.toggle('ml-64');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+[
+    {
+        "email": "mkx@gmail.com",
+        "filename": "DUMMY_RESUME.pdf",
+        "skills": [
+            "Python",
+            "SQL",
+            "Pandas",
+            "NumPy",
+            "Power BI",
+            "Data Visualization",
+            "Data Wrangling",
+            "Flask",
+            "PostgreSQL",
+            "MySQL"
+        ],
+        "category": "Data Science",
+        "upload_date": "2025-05-06T03:51:33.700698"
+    },
+    {
+        "email": "mkx@gmail.com",
+        "filename": "DUMMY_RESUME.pdf",
+        "skills": [
+            "Python",
+            "SQL",
+            "Pandas",
+            "NumPy",
+            "Power BI",
+            "Data Visualization",
+            "Data Wrangling",
+            "Flask",
+            "PostgreSQL",
+            "MySQL"
+        ],
+        "category": "Data Science",
+        "upload_date": "2025-05-06T04:31:17.610804"
+    },
+    {
+        "email": "abc@gmail.com",
+        "filename": "Muhammad_Ali.pdf",
+        "skills": [
+            "AutoCAD",
+            "SolidWorks",
+            "Ansys",
+            "Thermodynamics",
+            "Fluid Mechanics",
+            "MATLAB",
+            "CNC Programming",
+            "Project Management"
+        ],
+        "category": "Mechanical Engineer",
+        "upload_date": "2025-05-06T17:10:11.164553"
+    }
+]
