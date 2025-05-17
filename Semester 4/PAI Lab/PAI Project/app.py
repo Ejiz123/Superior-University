@@ -722,22 +722,27 @@ if __name__ == '__main__':
 # from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file
 # from werkzeug.utils import secure_filename
 # from dotenv import load_dotenv
+# import logging
 
 # # Load environment variables
 # load_dotenv()
 # SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'your_super_super_secret_key_here')
 
+# # Configure logging
+# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# logger = logging.getLogger(__name__)
+
 # # Ensure NLTK data is available
 # try:
 #     nltk.download('stopwords', quiet=True)
 #     nltk.download('wordnet', quiet=True)
-#     print("NLTK data downloaded successfully")
+#     logger.info("NLTK data downloaded successfully")
 # except Exception as e:
-#     print(f"Failed to download NLTK data: {e}")
+#     logger.error(f"Failed to download NLTK data: {e}")
 #     exit(1)
 
 # # Flask app setup
-# app = Flask(__name__, template_folder='templates')  # Explicitly set template folder
+# app = Flask(__name__)
 # app.secret_key = SECRET_KEY
 # app.permanent_session_lifetime = timedelta(minutes=30)
 
@@ -752,12 +757,12 @@ if __name__ == '__main__':
 # try:
 #     model = joblib.load('rf_resume_model.pkl')
 #     vectorizer = joblib.load('rf_vectorizer.pkl')
-#     print("Model and vectorizer loaded successfully")
+#     logger.info("Model and vectorizer loaded successfully")
 # except FileNotFoundError as e:
-#     print(f"Model or vectorizer file not found: {e}")
+#     logger.error(f"Model or vectorizer file not found: {e}")
 #     exit(1)
 # except Exception as e:
-#     print(f"Error loading model or vectorizer: {e}")
+#     logger.error(f"Error loading model or vectorizer: {e}")
 #     exit(1)
 
 # # NLTK setup
@@ -801,29 +806,45 @@ if __name__ == '__main__':
 #     "STLC", "Regression Testing", "Performance Testing", "QA Processes"
 # ]
 
-# # Precompute category_skills_dict at startup
+# Precompute category_skills_dict at startup
 # try:
 #     df = pd.read_csv("UpdatedResumeDataSet.csv")
 #     df['Resume'] = df['Resume'].astype(str)
 #     job_skill_map = df.groupby('Category')['Resume'].apply(lambda x: ' '.join(x)).reset_index()
 #     vectorized_resume = vectorizer.transform(job_skill_map['Resume'])
 #     feature_names = vectorizer.get_feature_names_out()
-#     print("Dataset loaded and processed successfully")
+#     logger.info("Dataset loaded and processed successfully")
 # except FileNotFoundError as e:
-#     print(f"Dataset file not found: {e}")
+#     logger.error(f"Dataset file not found: {e}")
 #     exit(1)
 # except Exception as e:
-#     print(f"Error processing dataset: {e}")
+#     logger.error(f"Error processing dataset: {e}")
 #     exit(1)
 
 # def get_top_skills(vector, top_n=10):
 #     top_indices = np.array(vector.toarray())[0].argsort()[-top_n:][::-1]
-#     return [feature_names[i] for i in top_indices]
+#     # Filter skills to match SKILLS list and preserve original case
+#     all_top_skills = [feature_names[i].lower() for i in top_indices]
+#     filtered_skills = [
+#         skill for skill in all_top_skills
+#         if any(skill.lower() == s.lower() for s in SKILLS)
+#     ]
+#     # Map to original case from SKILLS
+#     final_skills = [
+#         next(s for s in SKILLS if s.lower() == skill.lower())
+#         for skill in filtered_skills
+#     ]
+#     logger.debug(f"Top skills filtered: {final_skills}")
+#     return final_skills[:top_n]
 
 # category_skills_dict = {
 #     row['Category']: get_top_skills(vectorized_resume[i])
 #     for i, row in job_skill_map.iterrows()
 # }
+
+# # Use category_skills_dict keys as job_categories
+# job_categories = sorted(category_skills_dict.keys())
+# logger.info(f"Job categories: {job_categories}")
 
 # def load_users_from_csv(file_path=USERS_CSV):
 #     if not os.path.exists(file_path):
@@ -832,9 +853,9 @@ if __name__ == '__main__':
 #                 writer = csv.writer(f)
 #                 writer.writerow(['username', 'password', 'role'])
 #                 writer.writerow(['admin@gmail.com', 'admin123', 'admin'])
-#                 print("Default admin user created in users.csv")
+#                 logger.info("Default admin user created in users.csv")
 #         except IOError as e:
-#             print(f"Failed to create users CSV: {e}")
+#             logger.error(f"Failed to create users CSV: {e}")
 #             return {}
 #     users = {}
 #     try:
@@ -842,12 +863,12 @@ if __name__ == '__main__':
 #             reader = csv.DictReader(f)
 #             for row in reader:
 #                 users[row['username']] = {'password': row['password'], 'role': row['role']}
-#                 print(f"Loaded user: {row['username']}")
+#                 logger.debug(f"Loaded user: {row['username']}")
 #     except (IOError, csv.Error) as e:
-#         print(f"Failed to read users CSV: {e}")
+#         logger.error(f"Failed to read users CSV: {e}")
 #         return {}
 #     except Exception as e:
-#         print(f"Unexpected error reading users CSV: {e}")
+#         logger.error(f"Unexpected error reading users CSV: {e}")
 #         return {}
 #     return users
 
@@ -865,7 +886,7 @@ if __name__ == '__main__':
 #             writer.writerow([email, password, role])
 #         return True, "User registered successfully"
 #     except Exception as e:
-#         print(f"Error in add_user: {e}")
+#         logger.error(f"Error in add_user: {e}")
 #         return False, "Failed to register user"
 
 # def cleaned_text(text):
@@ -880,7 +901,7 @@ if __name__ == '__main__':
 #         text = " ".join(page.extract_text() or "" for page in reader.pages)
 #         return text
 #     except Exception as e:
-#         print(f"Failed to extract text from PDF: {e}")
+#         logger.error(f"Failed to extract text from PDF: {e}")
 #         return ""
 
 # def extract_skills(text):
@@ -896,17 +917,17 @@ if __name__ == '__main__':
 #                 content = f.read().strip()
 #                 data = json.loads(content) if content else []
 #                 if not isinstance(data, list):
-#                     print(f"PARSED_RESUMES_JSON content is not a list, resetting to empty list: {data}")
+#                     logger.warning(f"PARSED_RESUMES_JSON content is not a list, resetting to empty list: {data}")
 #                     data = []
 #     except (IOError, json.JSONDecodeError) as e:
-#         print(f"Failed to read parsed resumes: {e}")
+#         logger.error(f"Failed to read parsed resumes: {e}")
 #         data = []
 #     data.append(new_entry)
 #     try:
 #         with open(PARSED_RESUMES_JSON, 'w', encoding='utf-8') as f:
 #             json.dump(data, f, indent=4)
 #     except IOError as e:
-#         print(f"Failed to write parsed resumes: {e}")
+#         logger.error(f"Failed to write parsed resumes: {e}")
 
 # def process_resume_upload(file):
 #     if file and file.filename.endswith('.pdf'):
@@ -921,9 +942,12 @@ if __name__ == '__main__':
 #             prediction = model.predict(vect_text)[0]
 #             skills = extract_skills(text)
 #             upload_date = datetime.utcnow().isoformat()
-#             return prediction, skills, filename, upload_date
+#             # Map prediction to a category in job_categories if possible
+#             prediction_lower = prediction.lower()
+#             matched_category = next((cat for cat in job_categories if cat.lower() == prediction_lower), prediction)
+#             return matched_category, skills, filename, upload_date
 #         except Exception as e:
-#             print(f"Failed to process resume: {e}")
+#             logger.error(f"Failed to process resume: {e}")
 #             return None, [], None, None
 #     return None, [], None, None
 
@@ -932,7 +956,7 @@ if __name__ == '__main__':
 #     try:
 #         return render_template('index.html')
 #     except Exception as e:
-#         print(f"Error rendering home page: {e}")
+#         logger.error(f"Error rendering home page: {e}")
 #         return "Error rendering home page. Check if index.html exists in the templates folder.", 500
 
 # @app.route('/login', methods=['GET', 'POST'])
@@ -942,6 +966,7 @@ if __name__ == '__main__':
 #             username = request.form.get('username', '').strip()
 #             password = request.form.get('password', '').strip()
 #             role = request.form.get('role', '').strip()
+#             logger.debug(f"Login attempt: username={username}, role={role}")
 #             if not all([username, password, role]):
 #                 flash("All fields are required!", 'error')
 #                 return render_template('login.html')
@@ -949,19 +974,22 @@ if __name__ == '__main__':
 #             user = users.get(username)
 #             if user is None:
 #                 flash("User not found!", 'error')
+#                 logger.info(f"User {username} not found in users.csv")
 #                 return render_template('login.html')
 #             if user['password'] == password and user['role'] == role:
 #                 session.permanent = True
 #                 session['username'] = username
 #                 session['role'] = role
 #                 flash("Login successful!", 'success')
+#                 logger.info(f"Login successful for {username}")
 #                 return redirect('/admin' if role == 'admin' else '/user')
 #             else:
 #                 flash("Invalid credentials or role!", 'error')
+#                 logger.info(f"Login failed for {username}: password match={user['password'] == password}, role match={user['role'] == role}")
 #                 return render_template('login.html')
 #         return render_template('login.html')
 #     except Exception as e:
-#         print(f"Error in login route: {e}")
+#         logger.error(f"Error in login route: {e}")
 #         return "Error in login route. Check server logs for details.", 500
 
 # @app.route('/register', methods=['GET', 'POST'])
@@ -981,7 +1009,7 @@ if __name__ == '__main__':
 #                 flash(message, 'error')
 #         return render_template('register.html')
 #     except Exception as e:
-#         print(f"Error in register route: {e}")
+#         logger.error(f"Error in register route: {e}")
 #         return "Internal Server Error", 500
 
 # @app.route('/logout')
@@ -991,7 +1019,7 @@ if __name__ == '__main__':
 #         flash("Logged out successfully!", 'success')
 #         return redirect('/')
 #     except Exception as e:
-#         print(f"Error in logout route: {e}")
+#         logger.error(f"Error in logout route: {e}")
 #         return "Internal Server Error", 500
 
 # @app.route('/user', methods=['GET', 'POST'])
@@ -1004,17 +1032,17 @@ if __name__ == '__main__':
 #         skills = []
 #         user_resumes = []
 #         try:
-#             if os.path.exists(PARSED_RESUMES_JSON):
-#                 with open(PARSED_RESUMES_JSON, 'r', encoding='utf-8') as f:
-#                     content = f.read().strip()
-#                     all_resumes = json.loads(content) if content else []
-#                     if not isinstance(all_resumes, list):
-#                         all_resumes = []
-#                     user_resumes = [r for r in all_resumes if r.get('email') == session['username']]
+#             with open(PARSED_RESUMES_JSON, 'r', encoding='utf-8') as f:
+#                 content = f.read().strip()
+#                 all_resumes = json.loads(content) if content else []
+#                 if not isinstance(all_resumes, list):
+#                     logger.warning(f"PARSED_RESUMES_JSON content is not a list in user_dashboard: {all_resumes}")
+#                     all_resumes = []
+#                 user_resumes = [r for r in all_resumes if r.get('email') == session['username']]
 #         except (FileNotFoundError, json.JSONDecodeError):
-#             print("Failed to load resumes in user_dashboard, using empty list")
+#             logger.info("Failed to load resumes in user_dashboard, using empty list")
 #         except Exception as e:
-#             print(f"Unexpected error loading resumes in user_dashboard: {e}")
+#             logger.error(f"Unexpected error loading resumes in user_dashboard: {e}")
 #         if request.method == 'POST':
 #             uploaded_file = request.files.get('resume_file')
 #             prediction, skills, filename, upload_date = process_resume_upload(uploaded_file)
@@ -1026,7 +1054,7 @@ if __name__ == '__main__':
 #                 flash("Invalid file format. Please upload a PDF file.", 'error')
 #         return render_template('dashboard_user.html', username=session['username'], prediction=prediction, skills=skills, user_resumes=user_resumes)
 #     except Exception as e:
-#         print(f"Error in user_dashboard route: {e}")
+#         logger.error(f"Error in user_dashboard route: {e}")
 #         return "Internal Server Error", 500
 
 # @app.route('/upload', methods=['GET', 'POST'])
@@ -1047,27 +1075,44 @@ if __name__ == '__main__':
 #                 return redirect('/upload')
 #         return render_template('upload_resume.html')
 #     except Exception as e:
-#         print(f"Error in upload_resume route: {e}")
+#         logger.error(f"Error in upload_resume route: {e}")
 #         return "Internal Server Error", 500
 
 # @app.route('/recommendations', methods=['GET', 'POST'])
 # def recommendations():
 #     try:
 #         if session.get('role') != 'user':
-#             flash("Access denied!", 'error')
+#             logger.warning("Access denied for non-user attempting /recommendations")
+#             flash("Access denied! Please log in as a user.", 'error')
 #             return redirect('/')
 #         recommended_skills = []
+#         selected_category = None
 #         if request.method == 'POST':
-#             selected_category = request.form.get('category')
-#             if selected_category:
+#             selected_category = request.form.get('category', '').strip()
+#             logger.debug(f"Selected category: {selected_category}")
+#             if not selected_category:
+#                 logger.warning("No category selected in POST request")
+#                 flash("Please select a job category.", 'error')
+#             elif selected_category not in category_skills_dict:
+#                 logger.warning(f"Invalid category selected: {selected_category}")
+#                 flash(f"Invalid job category: {selected_category}.", 'error')
+#             else:
 #                 recommended_skills = category_skills_dict.get(selected_category, [])
-#                 print(f"Recommended skills for category {selected_category}: {recommended_skills}")
-#         return render_template('recommendations.html',
-#                              job_categories=list(category_skills_dict.keys()),
-#                              recommended_skills=recommended_skills)
+#                 logger.info(f"Recommended skills for {selected_category}: {recommended_skills}")
+#                 if not recommended_skills:
+#                     flash(f"No relevant skills found for category '{selected_category}'. Try another category.", 'info')
+#                 else:
+#                     flash(f"Recommended skills for {selected_category} loaded successfully!", 'success')
+#         return render_template(
+#             'recommendations.html',
+#             job_categories=job_categories,
+#             recommended_skills=recommended_skills,
+#             selected_category=selected_category
+#         )
 #     except Exception as e:
-#         print(f"Error in recommendations route: {e}")
-#         return "Internal Server Error", 500
+#         logger.error(f"Error in recommendations route: {str(e)}")
+#         flash("An error occurred while loading recommendations. Please try again later.", 'error')
+#         return redirect('/user')
 
 # @app.route('/admin')
 # def admin_dashboard():
@@ -1077,21 +1122,25 @@ if __name__ == '__main__':
 #             return redirect('/')
 #         resumes = []
 #         try:
-#             if os.path.exists(PARSED_RESUMES_JSON):
-#                 with open(PARSED_RESUMES_JSON, 'r', encoding='utf-8') as f:
-#                     content = f.read().strip()
-#                     resumes = json.loads(content) if content else []
-#                     if not isinstance(resumes, list):
-#                         resumes = []
+#             with open(PARSED_RESUMES_JSON, 'r', encoding='utf-8') as f:
+#                 content = f.read().strip()
+#                 resumes = json.loads(content) if content else []
+#                 if not isinstance(resumes, list):
+#                     logger.warning(f"PARSED_RESUMES_JSON content is not a list in admin_dashboard: {resumes}")
+#                     resumes = []
 #         except (FileNotFoundError, json.JSONDecodeError):
-#             print("Failed to load resumes in admin_dashboard, using empty list")
+#             logger.info("Failed to load resumes in admin_dashboard, using empty list")
 #         except Exception as e:
-#             print(f"Unexpected error reading resumes: {e}, using empty list")
+#             logger.error(f"Unexpected error reading resumes: {e}")
 #             resumes = []
 #         users = load_users_from_csv()
 #         total_resumes = len(resumes)
 #         total_users = len(users)
-#         recent_uploads = len([r for r in resumes if datetime.fromisoformat(r.get('upload_date', '1970-01-01T00:00:00')) > datetime.utcnow() - timedelta(days=7)])
+#         recent_uploads = 0
+#         try:
+#             recent_uploads = len([r for r in resumes if datetime.fromisoformat(r.get('upload_date', '1970-01-01T00:00:00')) > datetime.utcnow() - timedelta(days=7)])
+#         except ValueError as e:
+#             logger.error(f"Invalid date format in resumes: {e}")
 #         category_counts = {}
 #         for resume in resumes:
 #             category = resume.get('category', 'Unknown')
@@ -1106,136 +1155,52 @@ if __name__ == '__main__':
 #                              chart_labels=chart_labels,
 #                              chart_data=chart_data)
 #     except Exception as e:
-#         print(f"Error in admin_dashboard route: {e}")
+#         logger.error(f"Error in admin_dashboard route: {e}")
 #         return "Error in admin dashboard. Check server logs for details.", 500
 
+# from urllib.parse import quote
 
-
-
-# import shutil
-# from pathlib import Path
-
-# def ensure_resume_file_exists():
-#     """Ensure the resume data file exists and is valid"""
-#     try:
-#         file_path = Path(PARSED_RESUMES_JSON)
-        
-#         # Create parent directory if it doesn't exist
-#         file_path.parent.mkdir(parents=True, exist_ok=True)
-        
-#         # Create file with empty array if it doesn't exist
-#         if not file_path.exists():
-#             with open(file_path, 'w') as f:
-#                 json.dump([], f)
-#             print(f"Created new resume data file at {file_path}")
-        
-#         # Verify file is readable and contains valid JSON
-#         with open(file_path, 'r') as f:
-#             content = f.read().strip()
-#             if content:  # Only parse if not empty
-#                 data = json.loads(content)
-#                 if not isinstance(data, list):
-#                     raise ValueError("Resume data is not a list")
-        
-#         return True
-        
-#     except Exception as e:
-#         print(f"Error validating resume data file: {e}")
-#         return False
-
-# def backup_resume_file():
-#     """Create a backup of the resume data file"""
-#     try:
-#         if os.path.exists(PARSED_RESUMES_JSON):
-#             backup_path = f"{PARSED_RESUMES_JSON}.bak.{datetime.now().strftime('%Y%m%d%H%M%S')}"
-#             shutil.copyfile(PARSED_RESUMES_JSON, backup_path)
-#             print(f"Created backup at {backup_path}")
-#             return backup_path
-#     except Exception as e:
-#         print(f"Failed to create backup: {e}")
-#     return None
-
-# def load_resume_data():
-#     """Safely load resume data with validation"""
-#     try:
-#         # First ensure file exists and is valid
-#         if not ensure_resume_file_exists():
-#             return []
-        
-#         # Load the data
-#         with open(PARSED_RESUMES_JSON, 'r') as f:
-#             content = f.read().strip()
-#             if not content:
-#                 return []
-            
-#             data = json.loads(content)
-            
-#             # Validate basic structure
-#             if not isinstance(data, list):
-#                 print("Invalid data format - expected list, resetting file")
-#                 backup_resume_file()
-#                 with open(PARSED_RESUMES_JSON, 'w') as f:
-#                     json.dump([], f)
-#                 return []
-            
-#             # Validate each resume entry
-#             valid_resumes = []
-#             required_fields = {'email', 'filename', 'skills', 'category', 'upload_date'}
-            
-#             for resume in data:
-#                 if not isinstance(resume, dict):
-#                     continue
-#                 if not all(field in resume for field in required_fields):
-#                     continue
-#                 valid_resumes.append(resume)
-            
-#             return valid_resumes
-            
-#     except json.JSONDecodeError as e:
-#         print(f"JSON decode error: {e}")
-#         backup_resume_file()
-#         with open(PARSED_RESUMES_JSON, 'w') as f:
-#             json.dump([], f)
-#         return []
-#     except Exception as e:
-#         print(f"Error loading resume data: {e}")
-#         return []
 # @app.route('/resumes')
 # def view_resumes():
 #     try:
-#         # Verify admin access
-#         if 'role' not in session or session.get('role') != 'admin':
-#             flash("Administrator access required", 'error')
+#         if session.get('role') != 'admin':
+#             flash("Access denied!", 'error')
 #             return redirect('/')
-        
-#         # Load resume data with validation
-#         resumes = load_resume_data()
-        
-#         if not resumes:
-#             flash("No resume data found", 'info')
-        
-#         return render_template('view_resumes.html',
-#                             resumes=resumes,
-#                             admin_email=session.get('username'))
-    
+#         resumes = []
+#         try:
+#             with open(PARSED_RESUMES_JSON, 'r', encoding='utf-8') as f:
+#                 content = f.read().strip()
+#                 resumes = json.loads(content) if content else []
+#                 if not isinstance(resumes, list):
+#                     logger.warning(f"PARSED_RESUMES_JSON content is not a list in view_resumes: {resumes}")
+#                     resumes = []
+#         except (FileNotFoundError, json.JSONDecodeError):
+#             logger.info("Failed to load resumes in view_resumes, using empty list")
+#         except Exception as e:
+#             logger.error(f"Unexpected error reading resumes: {e}")
+#             resumes = []
+#         return render_template('view_resumes.html', resumes=resumes, admin_email=session.get('username'))
 #     except Exception as e:
-#         print(f"System error in view_resumes: {str(e)}")
-#         flash("A system error occurred while loading resumes. Technical details have been logged.", 'error')
+#         logger.error(f"Error in view_resumes route: {e}")
+#         flash("A system error occurred while loading resumes.", 'error')
 #         return redirect('/admin')
 
-# @app.route('/download_resume/<filename>')
+# from urllib.parse import unquote
+
+# @app.route('/download_resume/<path:filename>')
 # def download_resume(filename):
 #     try:
 #         if session.get('role') not in ['admin', 'user']:
 #             flash("Access denied!", 'error')
 #             return redirect('/')
-#         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-#         if os.path.exists(filepath):
-#             return send_file(filepath, as_attachment=True, download_name=filename)
+#         decoded_filename = unquote(filename)
+#         file_path = os.path.join(app.config['UPLOAD_FOLDER'], decoded_filename)
+#         if os.path.exists(file_path):
+#             return send_file(file_path, as_attachment=True)
 #         flash("File not found!", 'error')
 #         return redirect('/resumes' if session.get('role') == 'admin' else '/user')
 #     except Exception as e:
-#         print(f"Error in download_resume route: {e}")
+#         logger.error(f"Error in download_resume route: {e}")
 #         return "Internal Server Error", 500
 
 # @app.route('/manage_users', methods=['GET', 'POST'])
@@ -1258,25 +1223,15 @@ if __name__ == '__main__':
 #                                 writer.writerow([u, data['password'], data['role']])
 #                     flash(f"User {username} deleted successfully!", 'success')
 #                 except IOError as e:
-#                     print(f"Failed to update users CSV: {e}")
+#                     logger.error(f"Failed to update users CSV: {e}")
 #                     flash("Failed to delete user!", 'error')
 #             else:
 #                 flash("Invalid action or user not found!", 'error')
 #             return redirect('/manage_users')
 #         return render_template('manage_users.html', users=users)
 #     except Exception as e:
-#         print(f"Error in manage_users route: {e}")
+#         logger.error(f"Error in manage_users route: {e}")
 #         return "Internal Server Error", 500
-
-# from flask import Flask, render_template, redirect, flash, session, request
-# import json
-# import os
-# import logging
-
-# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-# logger = logging.getLogger(__name__)
-
-# # ... (other imports and setup remain unchanged)
 
 # @app.route('/filter_by_skills', methods=['GET', 'POST'])
 # def filter_by_skills():
@@ -1285,47 +1240,25 @@ if __name__ == '__main__':
 #             logger.warning("Access denied for non-admin user attempting /filter_by_skills")
 #             flash("Access denied!", 'error')
 #             return redirect('/')
-        
-#         selected = request.form.get('category') or request.args.get('selected', '')
+#         selected = request.form.get('category') or request.args.get('category', '')
 #         search_query = request.form.get('search', '').lower().strip()
 #         matched_resumes = []
 #         resumes = []
-
-#         logger.debug(f"Starting filter_by_skills with selected={selected}, search_query={search_query}")
 #         try:
-#             if os.path.exists(PARSED_RESUMES_JSON):
-#                 logger.debug(f"Found {PARSED_RESUMES_JSON}, attempting to read")
-#                 with open(PARSED_RESUMES_JSON, 'r', encoding='utf-8') as f:
-#                     content = f.read().strip()
-#                     if content:
-#                         resumes = json.loads(content)
-#                         if not isinstance(resumes, list):
-#                             logger.error(f"Invalid data type in {PARSED_RESUMES_JSON}: {type(resumes)}")
-#                             resumes = []
-#                     else:
-#                         logger.info(f"{PARSED_RESUMES_JSON} is empty")
-#                         resumes = []
-#             else:
-#                 logger.info(f"{PARSED_RESUMES_JSON} does not exist, creating new file")
-#                 os.makedirs(os.path.dirname(PARSED_RESUMES_JSON) or '.', exist_ok=True)
-#                 with open(PARSED_RESUMES_JSON, 'w', encoding='utf-8') as f:
-#                     json.dump([], f)
-#                 resumes = []
-#         except json.JSONDecodeError as e:
-#             logger.error(f"JSON decode error in {PARSED_RESUMES_JSON}: {str(e)}")
-#             flash("Error parsing resume data. File may be corrupted.", 'error')
-#             resumes = []
-#         except IOError as e:
-#             logger.error(f"IO error reading {PARSED_RESUMES_JSON}: {str(e)}")
-#             flash("Error accessing resume data file.", 'error')
+#             with open(PARSED_RESUMES_JSON, 'r', encoding='utf-8') as f:
+#                 content = f.read().strip()
+#                 resumes = json.loads(content) if content else []
+#                 if not isinstance(resumes, list):
+#                     logger.error(f"Invalid data type in {PARSED_RESUMES_JSON}: {type(resumes)}")
+#                     resumes = []
+#         except (FileNotFoundError, json.JSONDecodeError) as e:
+#             logger.info(f"Failed to load resumes in filter_by_skills: {e}")
 #             resumes = []
 #         except Exception as e:
-#             logger.error(f"Unexpected error loading {PARSED_RESUMES_JSON}: {str(e)}", exc_info=True)
+#             logger.error(f"Unexpected error loading {PARSED_RESUMES_JSON}: {str(e)}")
 #             flash("Unexpected error loading resume data.", 'error')
 #             resumes = []
-
 #         logger.debug(f"Loaded {len(resumes)} resumes from file")
-
 #         if selected:
 #             required_skills = set(category_skills_dict.get(selected, []))
 #             if not required_skills:
@@ -1333,28 +1266,19 @@ if __name__ == '__main__':
 #                 flash(f"No skills defined for category '{selected}'.", 'error')
 #             else:
 #                 logger.debug(f"Filtering with required_skills={required_skills}")
-#                 for idx, r in enumerate(resumes):
-#                     try:
-#                         resume_skills = set(
-#                             str(skill).lower() for skill in r.get('skills', []) if isinstance(skill, (str, int, float))
-#                         )
-#                         email = str(r.get('email', '')).lower()
-#                         filename = str(r.get('filename', '')).lower()
-#                         if required_skills & resume_skills and (
-#                             not search_query or search_query in email or search_query in filename
-#                         ):
-#                             matched_resumes.append(r)
-#                     except Exception as e:
-#                         logger.error(f"Error processing resume {idx} ({r.get('email', 'unknown')}): {str(e)}", exc_info=True)
-#                         continue
-
+#                 for r in resumes:
+#                     resume_skills = set(map(str.lower, r.get('skills', [])))
+#                     email = str(r.get('email', '')).lower()
+#                     filename = str(r.get('filename', '')).lower()
+#                     if required_skills & resume_skills and (
+#                         not search_query or search_query in email or search_query in filename
+#                     ):
+#                         matched_resumes.append(r)
+#                         logger.debug(f"Matched resume: {r.get('email')}")
 #         logger.debug(f"Found {len(matched_resumes)} matched resumes")
-
-#         job_categories = [cat for cat in category_skills_dict.keys() if isinstance(cat, str)]
 #         if not job_categories:
-#             logger.warning("No valid job categories found in category_skills_dict")
+#             logger.warning("No valid job categories found")
 #             flash("No job categories available.", 'error')
-
 #         return render_template(
 #             'filter_by_skills.html',
 #             job_categories=job_categories,
@@ -1362,11 +1286,11 @@ if __name__ == '__main__':
 #             selected=selected,
 #             search_query=search_query
 #         )
-
 #     except Exception as e:
-#         logger.error(f"Fatal error in filter_by_skills route: {str(e)}", exc_info=True)
-#         flash("Critical error in filter by skills. Check server logs for details.", 'error')
+#         logger.error(f"Error in filter_by_skills route: {str(e)}")
+#         flash("Error in filter by skills. Check server logs for details.", 'error')
 #         return redirect('/admin')
+
 # @app.route('/export_filtered_resumes')
 # def export_filtered_resumes():
 #     try:
@@ -1383,13 +1307,18 @@ if __name__ == '__main__':
 #                 content = f.read().strip()
 #                 resumes = json.loads(content) if content else []
 #                 if not isinstance(resumes, list):
+#                     logger.warning(f"PARSED_RESUMES_JSON content is not a list in export_filtered_resumes: {resumes}")
 #                     resumes = []
 #         except (FileNotFoundError, json.JSONDecodeError):
-#             resumes = []
+#             logger.info("Failed to load resumes in export_filtered_resumes, using empty list")
 #         except Exception as e:
-#             print(f"Unexpected error reading resumes in export_filtered_resumes: {e}")
+#             logger.error(f"Unexpected error reading resumes in export_filtered_resumes: {e}")
 #             resumes = []
-#         matched = [r for r in resumes if set(category_skills_dict.get(category, [])).issubset(set(map(str.lower, r.get('skills', []))))]
+#         required_skills = set(category_skills_dict.get(category, []))
+#         matched = [
+#             r for r in resumes
+#             if required_skills & set(map(str.lower, r.get('skills', [])))
+#         ]
 #         output = StringIO()
 #         writer = csv.writer(output)
 #         writer.writerow(['Email', 'Filename', 'Skills'])
@@ -1403,9 +1332,9 @@ if __name__ == '__main__':
 #             download_name=f'{category}_resumes.csv'
 #         )
 #     except Exception as e:
-#         print(f"Error in export_filtered_resumes route: {e}")
+#         logger.error(f"Error in export_filtered_resumes route: {e}")
 #         return "Internal Server Error", 500
 
 # if __name__ == '__main__':
-#     print("Starting Flask app...")
+#     logger.info("Starting Flask app...")
 #     app.run(debug=True)
